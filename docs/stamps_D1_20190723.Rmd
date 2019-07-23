@@ -1,0 +1,69 @@
+---
+title: "STAMPS Day 1"
+date: "Updated: `r format(Sys.Date())`"
+output: 
+  html_notebook:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+    theme: cosmo # my favs are cerulean, flatly, spacelab, cosmo, lumen
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Stamps Day 1
+
+**(Strategies and Techniques for Analyzing Microbial Population Structure)**
+
+ - Connecting to server: https://hackmd.io/@astrobiomike/stamps2019
+ - STAMPS wiki: https://github.com/mblstamps/stamps2019/wiki
+
+## Overview
+
+**Population of DNA molecules, aggregated signal, based on many copies**
+
+  - miseq, hiseq, nextseq, good accurate, <1% error, mostly substitutions
+  - IonTorrent a little diff, error indels, homopolymers
+
+**Single Strand Technology**
+
+  - Nanopore/PacBio, problem has high error rate 14%, 1 in 6 letters is wrong.
+
+## Micobiome Analysis
+
+### What is Analysis?
+
+ - Identify building blocks
+ - Figure out how they relate to each other
+ - Figure out what they do? (Functional analysis)
+ - Quantify abundance
+ - Understand how their abundance relates to: time, environmental, disease status, something relevant/correlated to metadata)
+
+### Types of Data
+
+ - 16S
+ - WGS (Shotgun Seq)
+ - Amplicon Sequence Variant (ASV)
+ - Organizational Taxonomic Unit (OTU)
+
+**Read length matters for assembly:**
+
+ - short reads make reconstruction impossible or very labor intensive
+ - longer reads much better (reconstructing microbial genome with PacBio is very straightforward)
+ - Scaffolding linking information makes it easier to cluster/assemble. Then take paired information to more easily reconstruct.
+
+## Tools
+
+### UNIX & R
+
+ - [**R Ecology**](https://datacarpentry.org/R-ecology-lesson/)
+ - [**UNIX crash course**](https://astrobiomike.github.io/stamps2019/unix-crash-course)
+
+### dada2
+
+ - [dada2 tutorial](https://benjjneb.github.io/dada2/tutorial.html)
+
+```{r dada2dat, echo=T, eval=F}
+
+```
+
