@@ -1,0 +1,372 @@
+---
+title: "STAMPS Day 3"
+date: "Updated: `r format(Sys.Date())`"
+output: 
+  html_notebook:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+    theme: cosmo # my favs are cerulean, flatly, spacelab, cosmo, lumen
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Stamps Day 3: dada2 & OSU's
+
+**(Strategies and Techniques for Analyzing Microbial Population Structure)**
+
+ - Connecting to server: https://hackmd.io/@astrobiomike/stamps2019
+ - STAMPS wiki: https://github.com/mblstamps/stamps2019/wiki
+
+
+## **OSU's & ASV's dada2** (Ben Callahan)
+
+ - https://github.com/mblstamps/stamps2019/tree/master/dada2
+ - https://benjjneb.github.io/dada2/tutorial.html
+
+### Marker Gene Sequencing (locus capture):
+
+ - 2,000,000 bp genome
+ - PCR amplification, and pick a marker gene (300 bp)
+ - all reads come from marker gene
+ - sequence that is amplified is informative (and shared by all organisms)
+
+### Sample Sequencing Issues
+
+ - sample sequences
+ - amplicon reads
+ 
+ > - How do we deal with errors?
+ > - How do we define the units of our analysis?
+ 
+### Closed Reference OTU's (operational taxonamic units)
+
+ - mapping to an anchor reference read
+ - closed ref OTU's: defined by sequences that is from *reference* database, not your data
+ - often don't have sequences that can use
+ - depends on environment (some have more)
+ 
+ **16S OTU Databases**
+
+- RDP
+- Greenjeans
+- Silva
+
+### Greedy Agglomerative Clustering
+
+ - Take most abundant, draw a 3% difference circle
+ - Then next most abundant, 3% circle
+ - centroids are based on actual data
+ - don't throw away novel variation within data
+ - closely related get collapsed, so lose variation
+ 
+### ASV (amplicon sequence variants) Clustering
+
+ - need to identify what is an error or not in the amplicon reads
+ - de novo process
+ - exact sequences are consistent labels and can be compared across studies
+ - process unlimited dataset sizes, eliminates need for joint reprocessing of raw data
+ 
+## `dada2`
+
+### Preprocessing
+
+ - Make sure primers are NOT on your reads!!!
+ - samples demultiplexed
+
+```{r install}
+
+library(dada2)
+packageVersion("dada2")
+library(here)
+library(ggplot2)
+
+```
+
+### Get data and evaluate
+
+First download data:
+
+```{r eval=F, echo=T}
+download.file(url = "http://www.mothur.org/w/images/d/d6/MiSeqSOPData.zip", destfile = paste0(here(), "/data/MiSeqSOPData.zip"))
+unzip(zipfile = paste0(here(), "/data/MiSeqSOPData.zip"), exdir = paste0(here(),"/data"))
+
+```
+
+Now look at forward and reverse fastq filenames
+
+```{r}
+# set path to data
+data_path <- paste0(here(), "/data/MiSeq_SOP/")
+
+# Forward and reverse fastq filenames
+fnFs <- sort(list.files(data_path, pattern="_R1_001.fastq", full.names = TRUE))
+fnRs <- sort(list.files(data_path, pattern="_R2_001.fastq", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+```
+
+
+Visualize
+
+```{r plot}
+plotQualityProfile(fnFs[1:2])
+```
+
+### Trim and Filter `.fq's`
+
+```{r trimnames}
+# Place filtered files in filtered/ subdirectory
+filtFs <- file.path(data_path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(data_path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+```
+
+```{r filter}
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+                     truncLen=c(240,160),
+                     maxN=0, 
+                     maxEE=c(2,2), 
+                     truncQ=2, 
+                     rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+head(out)
+```
+
+### Checking Error
+
+```{r learnError, eval=F, echo=T}
+errF <- learnErrors(filtFs, multithread=TRUE)
+errR <- learnErrors(filtRs, multithread=TRUE)
+```
+
+**Visualize this**
+
+```{r}
+plotErrors(errF, nominalQ=TRUE)
+```
+The error rates for each possible transition (A→C, A→G, …) are shown. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorithm. The red line shows the error rates expected under the nominal definition of the Q-score. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected. Everything looks reasonable and we proceed with confidence.
+
+ 
+### Sample Inference
+
+Now we look for ASV's!
+
+```{r infDaDa2F, eval=F, echo=T, message=F}
+dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+```
+```{r dada2R}
+dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+```
+
+Check it out:
+
+```{r}
+dadaFs[[1]]
+```
+Looks like we've identified 128 seq variants in forward reads.
+
+
+```{r}
+dadaRs[[1]]
+```
+And 119 in our R reads.
+
+### Merge and Align
+
+Now we merge paired reads. `dada2` merges sequences if they have at least 12 bp overlap and must be exactly the same.
+
+```{r merge, eval=T, echo=T}
+mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+# Inspect the merger data.frame from the first sample
+head(mergers[[1]])
+```
+
+Should have about the same number of merged files!
+
+### Construct Seq Table
+
+```{r makeSeqtable}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+
+```
+
+Check out distribution of seq lengths:
+
+```{r}
+# Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+```
+
+### Remove Chimeras
+
+```{r chimeraRm, eval=T, echo=T}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+dim(seqtab.nochim)
+sum(seqtab.nochim)/sum(seqtab) # so 96 of data is non-chimera
+```
+
+### Track Reads through Pipeline
+
+```{r tableReads, echo=T}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+head(track)
+```
+
+### Assign Taxonomy
+
+We need to download references from database. These live here: 
+
+ - https://zenodo.org/record/1172783#.XTnIapNKgWo
+ 
+```{r downloadRefs, echo=T, eval=F, message=F}
+
+download.file(url = "https://zenodo.org/record/1172783/files/silva_nr_v132_train_set.fa.gz?download=1", destfile = paste0(here(), "/data/silva_nr_v132_train_set.fa.gz"))
+
+download.file(url = "https://zenodo.org/record/1172783/files/silva_species_assignment_v132.fa.gz?download=1", destfile = paste0(here(), "/data/silva_species_assignment_v132.fa.gz"))
+
+
+```
+
+**Assign Taxon**
+
+```{r assignTaxon}
+
+taxa <- assignTaxonomy(seqtab.nochim, paste0(here(), "/data/silva_nr_v132_train_set.fa.gz"), multithread=TRUE)
+
+```
+
+**Add Species**
+
+```{r addSpp}
+
+taxa <- addSpecies(taxa, paste0(here(), "/data/silva_species_assignment_v132.fa.gz"))
+
+```
+View the resulting names
+
+```{r}
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+### Evaluate Accuracy
+
+```{r}
+unqs.mock <- seqtab.nochim["Mock",]
+unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
+cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
+```
+
+```{r}
+mock.ref <- getSequences(file.path(paste0(data_path, "HMP_MOCK.v35.fasta")))
+match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
+cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
+```
+
+### Phyloseq
+
+```{r}
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("phyloseq")
+
+library(phyloseq); packageVersion("phyloseq")
+library(Biostrings); packageVersion("Biostrings")
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+```{r setDataframe}
+
+samples.out <- rownames(seqtab.nochim)
+subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
+gender <- substr(subject,1,1)
+subject <- substr(subject,2,999)
+day <- as.integer(sapply(strsplit(samples.out, "D"), `[`, 2))
+samdf <- data.frame(Subject=subject, Gender=gender, Day=day)
+samdf$When <- "Early"
+samdf$When[samdf$Day>100] <- "Late"
+rownames(samdf) <- samples.out
+
+```
+
+```{r}
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+               sample_data(samdf), 
+               tax_table(taxa))
+ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+
+dna <- Biostrings::DNAStringSet(taxa_names(ps))
+names(dna) <- taxa_names(ps)
+ps <- merge_phyloseq(ps, dna)
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+ps
+
+```
+
+```{r}
+plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
+```
+
+```{r}
+# Transform data to proportions as appropriate for Bray-Curtis distances
+ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+# plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
+
+top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
+ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
+ps.top20 <- prune_taxa(top20, ps.top20)
+plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
+```
+
+
+### DECIPHER
+
+Try a different spp assignment package called "DECIPHER"
+
+```{r echo=F, eval=F}
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("DECIPHER")
+# library(DECIPHER); packageVersion("DECIPHER")
+```
+
+
+
+## Stats & `phyloseq`
+
+To install `phyloseq`
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("phyloseq")
+```
+
+### Making Estimates
+
+Different estimates have different assumptions see [Susan's book](http://bios221.stanford.edu/book/)
+
+## Contamination
+
+ - sequence negative controls
+ - measure biomass/DNA concentration & record
+ - Good wet lab practices (SOP)
+ - positive control: hard to make use of these with our current methods...maybe in future
+ - block of randomize batches
+ 
+ Two big sources: 
+ 
+  - exogenous (from outside source, e.g., from technician taking sample)
+  - internal (from one sample to another, or sequencer)
+  

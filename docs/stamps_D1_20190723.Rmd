@@ -54,16 +54,17 @@ editor_options:
 
 ## Tools
 
-### UNIX & R
-
  - [**R Ecology**](https://datacarpentry.org/R-ecology-lesson/)
  - [**UNIX crash course**](https://astrobiomike.github.io/stamps2019/unix-crash-course)
 
-### dada2
+### UNIX
 
- - [dada2 tutorial](https://benjjneb.github.io/dada2/tutorial.html)
+*To Connect:*
 
-```{r dada2dat, echo=T, eval=F}
+ - go to JupyterLab, then console/terminal
+ - or manually <!--ssh stamps19@149.165.157.83 plus pw-->
+ 
+*Notes:*
 
-```
-
+ - to right click on windows when in jupyter terminal: shift + right click, then paste
+ - to escape or quit, need Ctrl + D for macs for some programs like "`less`"

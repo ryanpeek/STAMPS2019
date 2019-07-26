@@ -1,0 +1,97 @@
+---
+title: "STAMPS Day 2"
+date: "Updated: `r format(Sys.Date())`"
+output: 
+  html_notebook:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+    theme: cosmo # my favs are cerulean, flatly, spacelab, cosmo, lumen
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Stamps Day 2: `ggplot`, Workflows, & Stats
+
+**(Strategies and Techniques for Analyzing Microbial Population Structure)**
+
+ - Connecting to server: https://hackmd.io/@astrobiomike/stamps2019
+ - STAMPS wiki: https://github.com/mblstamps/stamps2019/wiki
+
+See How to make figures:
+
+ - https://speeding-up-science-workshops.github.io/
+
+## **Workflows** (Titus)
+
+From *Samples* to *Annotation/Summary*
+
+### Assembly:
+
+ - Reads 100bp-50kb
+ - Genomes 5 Mbp
+ 
+ *Phages and viruses tend to be mixed locations, and can be many that are very closely related. Have very variable reads (viruses morph quickly) so alignments get typically thrown out or ignored (because too variable, if multiple reads all have different bp at given site, aligner can't deal). Deeper sequencing doesn't help because picks up additional variation and makes data noisier. So 1000X coverage doesn't help.*
+ 
+ - Create contigs from reads. Assembly is very lossy, maybe 5-50% of original data 
+ 
+### Binning
+
+ - abundance of contigs in metagenomes in sample (X axis)
+ - contig # (y axis)
+ 
+ - If normalized abundance (how many reads mapped per base) similar between contigs, DNA should be represented approximately in relation to the abundance of organisms, can get some quantitative measure of the "abundance" of sample.
+ - bin based on 4-mer and 5-mer nucleotide content, making artificial bins that are inferred bins, based on similarity, which works surprisingly well for archea and bacteria (even though they aren't clonal)
+ - eukaryotes don't work because they have repeats and are non-coding tend to evolve faster than coding regions, so more variable. So larger, and harder to work.
+
+### Bin Evaluation
+
+Really about bacterial/archael binning, phage viruses don't work well with this approach.
+
+ - **phylogeny**: if a bin has really different taxa should be reassessed (if half archaea have bacteria, either a science paper (lateral gene transfer) or mistake...probably mistake!)
+ - **How fragmented?** If you have many things, more likely there's junk in bin.
+ - **single copy completeness**: CheckM, in lit, multiple copies can be called contamination, same as redundancy?
+ 
+## **Stats** (Amy)
+
+### Types of Stats
+
+ - Exploratory Stats
+    - using stats to say something about your data, descriptive, what does data say?
+ - Inferential Stats
+    - using your data to say something about a population
+    - the populations you *want* to study may not be the populations you *get* to study
+
+### Populations vs. Samples
+
+ - many issues/limitations with data collection, sample design, etc.
+ - Something about the pop: "parameter a mostly numerical characteristic of a model
+ - **random sampling** not capturing all the population...it's a sample
+ - variance tells how much a sample is changing sample to sample, it's not about the parameter
+ - variance reflects how far apart repeated estimates are
+ 
+### Need multiple ways to corroborate data
+
+ - need multiple approaches to validate your findings
+ 
+### Hypothesis Testing
+
+ - variance is baseline to compare strength of the signal/noise ratio
+
+ $$\frac {estimate} {Standard\ error} \sim N(0,1)$$
+ 
+ - **What is p-value?**: probability of observing a result as or more extreme than what we observed, assuming the null hypothesis is true
+ 
+ - If the results are extreme, under the assumption of the null hypothesis, then perhaps our assumption is wrong
+ 
+### A Case Puzzle
+
+Antibiotic resistance in dair workers:
+ - shotgun sequencing of 30 samples and 300 million is limit
+ - possible to get samples from 90 indiv over 5 time points, and 3 different sample types (fecal, nasal, blood).
+
+300 million reads / 30 = 10 million reads per sample
+10 million * 150 bp (illumina) * 2 (paired end) = 3 GB pairs covered
+
+3 billion / 3 MB (typical genome size 3-5 MB) = 100x coverage
+
