@@ -1,7 +1,6 @@
 ---
 title: "R Notebook"
 output:
-  html_notebook: default
   html_document:
     highlight: textmate
     theme: spacelab
@@ -10,26 +9,31 @@ output:
 
 # Introduction 
 
-**For code:** *[See RStudio Notebooks on Github](https://github.com/rstudio/webinars/blob/master/25-Notebooks/notebook-demo.Rmd)*</sup>
+**For code:** *[See tutorial on RStudio Notebooks](https://rmarkdown.rstudio.com/lesson-2.html)*
 
 This notebook demonstrates many R Notebook features. Ignore this first chunk for now; we'll come back to it.
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE) # this sets default for chunks to always be echo=TRUE
+# load libraries for all chunks in document
 library(ggplot2)
 library(dygraphs)
 library(mapview)
 
 ```
 
-# Output Types
+Rmarkdown is a really great way to write notes, reports, even books or manuscripts if you are willing. The biggest difference is that you can type as you like anywhere in the document, and you can **only** run code by setting it apart with a code chunk, which looks kind of funny:
 
-## Console Output
+![](rchunk.png)
 
-First, let's create a simple code chunk that prints the numbers from 1 to 10. Run this chunk with *Ctrl+Shift+Enter* (*Cmd+Shift+Enter* on OS X). 
+The most important component is the three backtics (` ``` `) and the squiggly brackets with an r (` {r} `).
 
-```{r numbers, eval=TRUE, echo=T}
+## Output Types
+
+RMarkdown provides a number of possible outputsFirst, let's create a simple code chunk that prints the numbers from 1 to 10. Run this chunk with *Ctrl+Shift+Enter* (*Cmd+Shift+Enter* on OS X). 
+
+```{r numbers, eval=TRUE, echo=TRUE}
 numbers <- seq_len(15)
 numbers
 ```
@@ -41,7 +45,8 @@ Notice how the output appears right beneath the chunk, as though you'd run the c
 Of course, sometimes your R code doesn't just produce text; it produces graphical output such as plots. These are supported, too. Try running this chunk:
 
 ```{r graphics, echo=T, eval=T}
-ggplot()+geom_point(data = iris, aes(Sepal.Length, Petal.Length, color = Species, size = Petal.Width), pch=21)
+ggplot() + 
+  geom_point(data=iris, aes(x=Sepal.Length, y=Petal.Length, color=Species, size=Petal.Width), pch=21)
 ```
 
 Notice that it isn't necessary to prefix `ggplot` with `ggplot2::` since there is a `library(ggplot2)` call in the setup chunk. RStudio runs the setup chunk automatically whenever it's needed. 
@@ -69,14 +74,12 @@ Sys.sleep(1); runif(3)
 
 Sometimes you may want to run portions of your chunk rather than the whole thing. That's just fine too. Try using *Ctrl+Enter* (OS X: *Cmd+Enter*) to run this chunk line by line.
 
-```{r linewise}
-cities <- read.csv("cities.csv")
-cities
-leaflet(cities) %>% 
-  addTiles() %>%
-  addCircles(lng = ~Long, lat = ~Lat, weight = 1,
-    radius = ~sqrt(Pop) * 30, popup = ~City)
+```{r}
+library(mapview)
+
+mapview()
 ```
+
 
 Notice:
 

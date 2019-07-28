@@ -100,4 +100,24 @@ Taxonomy is static
  - alignment error reflects high evolutionary heterogeneity in you data
  - increasing rate of evolution means more error
  - SEPP works a bit better than HMMR.
+ 
+## **Field to Figure** (Adina Howe)
+
+*adina.howe@gmail.com* *(www.germslab.org)*
+
+Cost of samples: variable depending on level of detail/primers, etc
+
+ - plating $3
+ - qPCR $4/sample
+ - 16s $15/sample
+ - meta-ome $1k-5k/sample
+ - nutrients in situ $15-25
+ 
+### Primer Prep:
+ 
+ - Designing probes for specific genes: e.g., ammonia oxidation genes for nitrogen cycling in the soil (Liu and Villenueva et al. in prep). Number of clusters found by similarity threshold.
+
+ - High throughout QPCR, liquid handling and micro fluidics (Biomark HD):
+    - quantifications for 192x samples x up to 24 targets (4,608 reactions)
+   
  - 

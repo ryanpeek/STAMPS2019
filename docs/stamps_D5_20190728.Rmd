@@ -1,0 +1,176 @@
+---
+title: "STAMPS Day 5"
+date: "Updated: `r format(Sys.Date())`"
+output: 
+  html_notebook:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+    theme: cosmo # my favs are cerulean, flatly, spacelab, cosmo, lumen
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+options(scipen = 10)
+```
+
+
+# Stamps Day 5: network analysis
+
+**(Strategies and Techniques for Analyzing Microbial Population Structure)**
+
+ - Connecting to server: https://hackmd.io/@astrobiomike/stamps2019
+ - STAMPS wiki: https://github.com/mblstamps/stamps2019/wiki
+
+
+## **Networks** (Sebastian M.)
+
+ - https://github.com/mblstamps/stamps2019/blob/master/assembly/trimming.md
+
+ - [Tutorial](https://github.com/mblstamps/stamps2019/wiki/network-tutorial)
+ 
+ 
+### Code Tutorial
+
+[Network Tutorial](https://github.com/mblstamps/stamps2019/wiki/network-tutorial)
+
+```{r, eval=F}
+# SPIEC-EASI
+
+# [Tutorial](https://github.com/mblstamps/stamps2019/wiki/network-tutorial)
+
+download.file("https://ndownloader.figshare.com/files/16638143", destfile = "data/STAMPS_Network_tutorial.tar.gz")
+untar("data/STAMPS_Network_tutorial.tar.gz")
+
+download.file("https://ndownloader.figshare.com/files/16639130", destfile = "code/STAMPS_Network_tutorial2019.R")
+```
+
+
+## Intro to Estimation (Amy Willis)
+
+[slides here](https://github.com/statdivlab/stamps2019/tree/master/estimation)
+
+
+ - Type of data you have changes the questions you can answer 
+    - *16S*: taxonomy, function, concentration/abundance 
+    - *Shotgun*: taxonomy, function, concentration/abundance 
+    - *qPCR*: taxonomy, function, concentration/abundance
+    
+ - Many standards use proportions, but lose precision in data this way. 
+ - 16S and WGS/shotgun data are compositional
+ 
+### Parameters
+
+ - estimation using info about the sample to estimate something about the population
+    - we can use these estimates to assess relative abundance of genes/taxa
+    - we can use these estimates to assess diversity parameters ($\alpha$, $\beta$)
+    - presence absence of taxa or genes
+    - abundance of 1 taxa divided by abundance of taxon 2
+
+**Example**
+
+ - we have C groups in our environ
+ - each group has some relative abundance
+
+### `corncob`
+
+- $\phi$  how correlated invidual microbial abundances are with each other
+
+**Similarities between `corncob` and `DESEQ2`**
+ - take care of library size differences
+ - both model overdispersion, DESEQ uses poisson gamma, corncob uses beta-binomial
+ 
+**Dissimilarities:**
+ - Corncob designed for 16S, DESEQ for RNA data
+
+Because of issues with Wohl tests and zeros, so corncob doesn't rarefy and handles zero counts without pseudocounts.
+
+ - 95% prediction intervals to describe uncertainty in our observation, on average about 95% of the points should fall into the interval.
+ - do the observed points fall within the prediction interval (see plots)? If too many near the top or fall outside that would indicate a bad model fit.
+
+
+## Metagenomic Pipleline with `corncob` (Taylor)
+
+
+```{r eval=F, echo=T}
+
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/corncob_tutorial/corncob_tutorial.Rmd", destfile = "docs/corncob_tutorial.Rmd")
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/corncob_tutorial/corncob_tutorial.html", destfile = "docs/corncob_tutorial.html")
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/corncobDESeq2/corncobDESeq2.Rmd", destfile = "docs/corncobDESeq2.Rmd")
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/corncob_metagenome/corncob_metagenome.Rmd", destfile = "docs/corncob_metagenome.Rmd")
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/diversity-lab.Rmd", destfile = "docs/diversity-lab.Rmd")
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/corncob_metagenome/count_data.csv", destfile = "data/count_data.csv")
+
+# download.file("https://raw.githubusercontent.com/statdivlab/stamps2019/master/labs/corncob_metagenome/sample_data.csv", destfile = "data/sample_data.csv")
+
+#file.show("docs/corncob_metagenome.html")
+```
+
+### Generating Gene Counts
+
+ - getting metagenomic counts is more complicated than ASVs
+
+### Generating Data
+
+ - Download Bins (from somewher)
+ - Decompress Bins
+ - Which species occurred the most times in these samples? (what species most present across all metagenomes...which species occurs across the most of our metagenomes)
+ - Assign taxonomy based on taxonomic database (`sourmash`)
+ - things that have more copies are things that may be evolving more quickly (diff in biology)
+ - would expect the read copy number to be the same across the metagenome
+ 
+**ORF** Open Reading Frame (largely synonymous with genes)
+
+### Metagenome tutorial
+
+See [here](https://github.com/statdivlab/stamps2019)
+
+```{r}
+library(tidyverse)
+library(here)
+library(phyloseq)
+
+# devtools::install_github("bryandmartin/corncob")
+library(corncob)
+
+count_data <- read_csv(paste0(here(), "/data/count_data.csv"))
+sample_data <- read_csv(paste0(here(), "/data/sample_data.csv"))
+
+# taxa names
+my_counts <- otu_table(count_data[,-1], taxa_are_rows = TRUE)
+# Pull out the gene ID to use as "taxa" names
+taxa_names(my_counts) <- count_data %>% pull(X1)
+
+# Remove first three columns
+my_samp <- sample_data(sample_data[,-c(1:3)])
+# Pull out the sample ID to use as sample names
+# Note that I have to use the original data, 
+# as I removed this column from my_samp
+sample_names(my_samp) <- sample_data %>% pull(sampleID)
+
+# combine data
+mahery <- phyloseq(my_counts, my_samp)
+mahery
+
+# model (takes several minutes to run)
+my_output <- differentialTest(formula = ~ Sex*BMI,
+                              formula_null = ~ Sex,
+                              phi.formula = ~ 1,
+                              phi.formula_null = ~ 1,
+                              data = mahery, 
+                              test = "Wald", boot = FALSE)
+
+
+my_output$significant_taxa
+
+save(my_output, file = paste0(here(),"/output/diff_model_corncob.rda"))
+
+```
+
