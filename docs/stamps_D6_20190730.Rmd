@@ -1,0 +1,50 @@
+---
+title: "STAMPS Day 6"
+date: "Updated: `r format(Sys.Date())`"
+output: 
+  html_notebook:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+    theme: cosmo # my favs are cerulean, flatly, spacelab, cosmo, lumen
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+options(scipen = 10)
+```
+
+
+# Stamps Day 6: Assembly & reference guided strain resolution
+
+**(Strategies and Techniques for Analyzing Microbial Population Structure)**
+
+ - Connecting to server: https://hackmd.io/@astrobiomike/stamps2019
+ - STAMPS wiki: https://github.com/mblstamps/stamps2019/wiki
+
+
+## metagenome assembly (taylor)
+
+ - https://github.com/mblstamps/stamps2019/blob/master/atlas/atlas-pipeline.md
+
+ 
+## Reference guided strain assembly - metacompass (Todd Treangen)
+
+ - Treangen lab at Rice University (Houston, TX)
+ - pathogen detection
+
+### Issues in Metagenomes
+
+ - high coverage regions == abundant organisms
+ - **sequencing error rates**
+ - **repeats**
+ - repeats are genome sized due to closely related strains in the sample
+ 
+*isolate genome*
+*metagenome*
+
+ - Why assemblers break contigs? *Not enough coverage to make contigs*
+ 
+ 
+ 

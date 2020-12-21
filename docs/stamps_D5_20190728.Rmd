@@ -132,7 +132,7 @@ Because of issues with Wohl tests and zeros, so corncob doesn't rarefy and handl
 
 See [here](https://github.com/statdivlab/stamps2019)
 
-```{r}
+```{r, eval=F, echo=T}
 library(tidyverse)
 library(here)
 library(phyloseq)
@@ -171,6 +171,11 @@ my_output <- differentialTest(formula = ~ Sex*BMI,
 my_output$significant_taxa
 
 save(my_output, file = paste0(here(),"/output/diff_model_corncob.rda"))
+
+```
+```{r echo=F}
+
+load(paste0(here::here(), "/output/diff_model_corncob.rda"))
 
 ```
 
